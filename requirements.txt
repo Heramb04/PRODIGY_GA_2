@@ -1,7 +1,6 @@
-diffusers
-torch
+diffusers[torch]
 transformers
-gradio
-Pillow
-python-dotenv
 accelerate
+torch
+safetensors
+gradio 
