@@ -1,44 +1,46 @@
 import torch
 from diffusers import StableDiffusionPipeline
 import gradio as gr
-import os
-from PIL import Image
-from dotenv import load_dotenv
 
-# Load environment variables (e.g. HF_TOKEN)
-load_dotenv()
+def load_pipeline():
+    # Auto-detect any available GPU backend or fallback to CPU
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
 
-# Optional: Set HF_TOKEN if using wandb
-if "HF_TOKEN" in os.environ:
-    os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN")
+    dtype = torch.float16 if device.type != "cpu" else torch.float32
+    print(f"Using device: {device}, dtype: {dtype}")
 
-# Choose device and dtype based on GPU availability
-device = "cuda" if torch.cuda.is_available() else "cpu"
-dtype = torch.float16 if device == "cuda" else torch.float32
+    pipe = StableDiffusionPipeline.from_pretrained(
+        "runwayml/stable-diffusion-v1-5",
+        torch_dtype=dtype
+    ).to(device)
 
-# Load Stable Diffusion pipeline
-pipe = StableDiffusionPipeline.from_pretrained(
-    "runwayml/stable-diffusion-v1-5",
-    torch_dtype=dtype
-).to(device)
+    return pipe
 
-# Inference function
-def generate_image(prompt, steps, guidance):
-    image = pipe(prompt, num_inference_steps=steps, guidance_scale=guidance).images[0]
-    return image
+# Initialize pipeline once
+pipe = load_pipeline()
 
-# Gradio UI
-with gr.Blocks() as demo:
-    gr.Markdown("# Stable Diffusion Image Generator")
-    with gr.Row():
-        prompt = gr.Textbox(label="Prompt", placeholder="e.g. 'a steampunk robot in a lush jungle'")
-        steps = gr.Slider(minimum=10, maximum=100, value=50, step=5, label="Inference Steps")
-        guidance = gr.Slider(minimum=1.0, maximum=15.0, value=7.5, step=0.5, label="Guidance Scale")
-    run_button = gr.Button("Generate")
-    output = gr.Image(type="pil", label="Result")
+def generate(prompt: str, steps: int, scale: float):
+    """Run the pipeline and return a PIL image."""
+    out = pipe(prompt, num_inference_steps=steps, guidance_scale=scale)
+    return out.images[0]
 
-    run_button.click(fn=generate_image, inputs=[prompt, steps, guidance], outputs=output)
+# Build and launch Gradio UI
+demo = gr.Interface(
+    fn=generate,
+    inputs=[
+        gr.Textbox(lines=1, placeholder="Enter prompt…", label="Prompt"),
+        gr.Slider(1, 100, value=50, step=1, label="Inference Steps"),
+        gr.Slider(1.0, 15.0, value=7.5, step=0.1, label="Guidance Scale"),
+    ],
+    outputs=gr.Image(type="pil"),
+    title="Stable Diffusion Image Generator",
+    description="Generates images based on your prompt!."
+)
 
-# Launch app
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(share=True)
