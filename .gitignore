@@ -1,0 +1,41 @@
+# Python cache and environment
+__pycache__/
+*.py[cod]
+*.ipynb_checkpoints
+env/
+venv/
+.venv/
+
+# System junk
+.DS_Store
+Thumbs.db
+
+# Model outputs and Hugging Face caches
+*.safetensors
+*.pt
+*.bin
+*.ckpt
+*.onnx
+*.pkl
+*.joblib
+*.tar.gz
+
+# Hugging Face cache and downloaded models
+~/.cache/
+~/.huggingface/
+huggingface/
+cache/
+*.msgpack
+
+# Generated model folders from save_pretrained()
+Stable_diff/
+*/model_index.json
+*/scheduler/*
+*/tokenizer/*
+*/text_encoder/*
+*/unet/*
+*/vae/*
+*/*.png
+
+# Environment variables / secrets
+.env
